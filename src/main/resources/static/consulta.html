@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Consulta de Estudiantes</title>
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f4f4f4; }
+        input { padding: 0.5rem; width: 300px; }
+    </style>
+</head>
+<body>
+    <h2>Estudiantes Registrados</h2>
+    <input type="text" id="buscador" placeholder="Buscar por carné, nombre o correo...">
+    <button onclick="cargarEstudiantes()">Actualizar</button>
+    
+    <table id="tabla">
+        <thead>
+            <tr>
+                <th>Carné</th><th>Nombres</th><th>Apellidos</th><th>Correo</th>
+                <th>Carrera</th><th>Teléfono</th><th>Fecha Nac.</th><th>Género</th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
+
+    <script>
+        let estudiantes = [];
+
+        async function cargarEstudiantes() {
+            const resp = await fetch('/api/estudiantes');
+            estudiantes = await resp.json();
+            renderTabla(estudiantes);
+        }
+
+        function renderTabla(lista) {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = lista.map(e => `
+                <tr>
+                    <td>${e.carne}</td>
+                    <td>${e.nombres}</td>
+                    <td>${e.apellidos}</td>
+                    <td>${e.correo}</td>
+                    <td>${e.carrera}</td>
+                    <td>${e.telefono}</td>
+                    <td>${e.fechaNacimiento}</td>
+                    <td>${e.genero}</td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('buscador').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            const filtrados = estudiantes.filter(est => 
+                est.carne.toLowerCase().includes(q) ||
+                est.nombres.toLowerCase().includes(q) ||
+                est.apellidos.toLowerCase().includes(q) ||
+                est.correo.toLowerCase().includes(q)
+            );
+            renderTabla(filtrados);
+        });
+
+        // Cargar al inicio
+        cargarEstudiantes();
+    </script>
+</body>
+</html>

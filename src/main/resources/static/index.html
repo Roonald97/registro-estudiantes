@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Estudiantes</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
+        .error { color: red; font-size: 0.8rem; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h2>Registro de Estudiante</h2>
+    <form id="form">
+        <label>Carné (8 alfanuméricos):</label><br>
+        <input type="text" id="carne" maxlength="8" required><br>
+        
+        <label>Nombres:</label><br>
+        <input type="text" id="nombres" required><br>
+        
+        <label>Apellidos:</label><br>
+        <input type="text" id="apellidos" required><br>
+        
+        <label>Correo:</label><br>
+        <input type="email" id="correo" required><br>
+        
+        <label>Carrera:</label><br>
+        <select id="carrera" required>
+            <option value="">Seleccione...</option>
+            <option value="ingenieria en sistemas">Ingeniería en Sistemas</option>
+            <option value="ingenieria industrial">Ingeniería Industrial</option>
+            <option value="administracion de empresas">Administración de Empresas</option>
+            <option value="contaduría pública">Contaduría Pública</option>
+            <option value="psicología">Psicología</option>
+            <option value="ingeniería civil">Ingeniería Civil</option>
+        </select><br>
+        
+        <label>Teléfono (####-####):</label><br>
+        <input type="tel" id="telefono" placeholder="1234-5678" required><br>
+        
+        <label>Fecha de Nacimiento:</label><br>
+        <input type="date" id="fechaNacimiento" required><br>
+        
+        <label>Género:</label><br>
+        <input type="radio" name="genero" value="masculino"> Masculino
+        <input type="radio" name="genero" value="femenino"> Femenino
+        <input type="radio" name="genero" value="otro"> Otro<br><br>
+        
+        <div class="g-recaptcha" data-sitekey="TU_SITE_KEY_DE_GOOGLE"></div><br>
+        
+        <button type="submit" id="btnSubmit" disabled>Registrar</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('form');
+        const btn = document.getElementById('btnSubmit');
+
+        function validarFormulario() {
+            const carne = document.getElementById('carne').value;
+            const nombres = document.getElementById('nombres').value;
+            const apellidos = document.getElementById('apellidos').value;
+            const correo = document.getElementById('correo').value;
+            const carrera = document.getElementById('carrera').value;
+            const telefono = document.getElementById('telefono').value;
+            const fecha = document.getElementById('fechaNacimiento').value;
+            const genero = document.querySelector('input[name="genero"]:checked');
+            const recaptcha = grecaptcha.getResponse();
+
+            // Validaciones básicas (puedes expandir con regex)
+            const carneValido = /^[a-zA-Z0-9]{8}$/.test(carne);
+            const nombresValido = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$/.test(nombres);
+            const telValido = /^\d{4}-\d{4}$/.test(telefono);
+            
+            // Validar edad (16 años)
+            let edadValida = false;
+            if (fecha) {
+                const hoy = new Date();
+                const nac = new Date(fecha);
+                let edad = hoy.getFullYear() - nac.getFullYear();
+                const m = hoy.getMonth() - nac.getMonth();
+                if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+                edadValida = edad >= 16;
+            }
+
+            const todoValido = carneValido && nombresValido && apellidos.length > 0 &&
+                               correo.includes('@') && carrera !== '' && telValido &&
+                               edadValida && genero && recaptcha.length > 0;
+            
+            btn.disabled = !todoValido;
+        }
+
+        // Escuchar cambios
+        form.addEventListener('input', validarFormulario);
+        form.addEventListener('change', validarFormulario);
+        
+        // reCAPTCHA callback
+        function recaptchaCallback() {
+            validarFormulario();
+        }
+
+        // Envío
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                carne: document.getElementById('carne').value,
+                nombres: document.getElementById('nombres').value,
+                apellidos: document.getElementById('apellidos').value,
+                correo: document.getElementById('correo').value,
+                carrera: document.getElementById('carrera').value,
+                telefono: document.getElementById('telefono').value,
+                fechaNacimiento: document.getElementById('fechaNacimiento').value,
+                genero: document.querySelector('input[name="genero"]:checked').value,
+                recaptchaToken: grecaptcha.getResponse()
+            };
+
+            const resp = await fetch('/api/estudiantes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (resp.ok) {
+                alert('Estudiante registrado con éxito');
+                form.reset();
+                grecaptcha.reset();
+                btn.disabled = true;
+            } else {
+                const error = await resp.text();
+                alert('Error: ' + error);
+            }
+        });
+    </script>
+</body>
+</html>
